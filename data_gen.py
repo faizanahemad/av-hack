@@ -64,6 +64,7 @@ from lib import *
 
 def batch_flow_data(df,extract_fn,batch_size,n_batch_groups=10):
     # print("Flowing %s samples in %s batch sizes"%(len(df),self.batch_size))
+    
     for k,g in df.groupby(np.arange(len(df))//(batch_size*n_batch_groups)):
         # Processing
         flowed_data = extract_fn(g)
@@ -87,7 +88,7 @@ class MakeIter(object):
         self.length = int(np.ceil(len(df)/batch_size))
         self.df = df
         self.extract_fn = extract_fn
-        self.iter = self.batch_generator_func(self.df,self.extract_fn,self.batch_size)
+        self.iter = self.batch_generator_func(self.df.sample(frac=1),self.extract_fn,self.batch_size)
         
         
     def __iter__(self):
@@ -95,7 +96,7 @@ class MakeIter(object):
             try:
                 yield next(self.iter)
             except StopIteration:
-                self.iter = self.batch_generator_func(self.df,self.extract_fn,self.batch_size)
+                self.iter = self.batch_generator_func(self.df.sample(frac=1),self.extract_fn,self.batch_size)
             
     
         
@@ -105,7 +106,7 @@ class MakeIter(object):
         try:
             return next(self.iter)
         except StopIteration:
-            self.iter = self.batch_generator_func(self.df,self.extract_fn,self.batch_size)
+            self.iter = self.batch_generator_func(self.df.sample(frac=1),self.extract_fn,self.batch_size)
             return next(self.iter)
             
         

@@ -4,6 +4,7 @@ from tqdm import tqdm_notebook as tqdm
 from tqdm import tqdm as tqdm_plain
 from keras.regularizers import l2
 from keras.regularizers import L1L2
+from IPython.display import display, HTML
 
 from keras import backend as K
 import time
@@ -76,20 +77,20 @@ def build_dict(data, vocab_size=100000, min_count=1):
     sorted_words = [word for word, freq in word_count.most_common() if freq >= min_count]
     print("Total Words after Min frequency filtering", len(sorted_words))
     word_dict = {}  # This is what we are building, a dictionary that translates words into integers
-    for idx, word in enumerate(sorted_words[:vocab_size - 2]):  # The -2 is so that we save room for the 'no word'
-        word_dict[word] = idx + 2  # 'infrequent' labels
+    for idx, word in enumerate(sorted_words[:vocab_size - 1]):  # The -2 is so that we save room for the 'no word'
+        word_dict[word] = idx + 1  # 'infrequent' labels
 
     return word_dict
 
 
 def get_text_le(vocab_size=100000, min_count=1):
     le = {}
-    INFREQ = 1
-    NOWORD = 0
+    INFREQ = 0
     UNKNOWN_TOKEN = '<unknown>'
 
     def le_train(texts):
         le['wd'] = build_dict(texts, vocab_size=vocab_size, min_count=min_count)
+        le['wd'][''] = INFREQ
         return le['wd']
 
     def word2label(word):
@@ -121,7 +122,7 @@ def preprocess_for_word_cnn(df, text_column='text_raw', output_column="text", wo
 
 
 
-def conv_layer(inputs, n_kernels=32, kernel_size=3, dropout=0.2,spatial_dropout=0.2,
+def conv_layer(inputs, n_kernels=32, kernel_size=3, dropout=0.25,spatial_dropout=0.25,
                dilation_rate=1, padding='valid', strides=1):
     out = Conv1D(n_kernels,
                  kernel_size=kernel_size,
@@ -222,6 +223,11 @@ def show_results(y_true,y_pred):
     acc = accuracy_score(y_true,y_pred)
     f1_mac = f1_score(y_true, y_pred, average='macro')
     print("Accuracy = %.2f, Macro F1 = %.2f"%(acc,f1_mac))
+    return (acc,f1_mac)
+
+def calculate_results(y_true,y_pred):
+    acc = accuracy_score(y_true,y_pred)
+    f1_mac = f1_score(y_true, y_pred, average='macro')
     return (acc,f1_mac)
 
 
@@ -352,6 +358,18 @@ def read_csv(filename):
     df['occurences'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['occurences'].values)
     df['context_txt'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['context_txt'].values)
     df['full_txt'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['full_txt'].values)
+    
+    df['word_sentiments'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['word_sentiments'].values)
+    df['word_count'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['word_count'].values)
+    df['word_sentiments_ctx'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['word_sentiments_ctx'].values)
+    df['word_count_ctx'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['word_count_ctx'].values)
+    
+    
+    if "context_txt_encoded" in df.columns:
+        df['context_txt_encoded'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['context_txt_encoded'].values)
+        df['full_txt_encoded'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['full_txt_encoded'].values)
+    
+    
     if 'ohe_labels' in df.columns:
         df['ohe_labels'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['ohe_labels'].values)
     df['full_txt_mask_gaussian'] = Parallel(n_jobs=jobs, backend="loky")(delayed(ast.literal_eval)(x) for x in df['full_txt_mask_gaussian'].values)
@@ -393,19 +411,106 @@ class Metrics(keras.callbacks.Callback):
         print("Validation F1 Score = %.4f, Train F1 Score = %.4f",(f1s,f1s_train))
         return
     
+def prediction_caliberation_wrapper(arr,weights=[1,1,1]):
+    arr = np.copy(arr)
+    for i,v in enumerate(weights):
+        arr[:,i] = arr[:,i]*v
+    return arr
+    
+def find_best_caliberation(y_train,y_val,y_train_preds,y_val_preds):
+    results = []
+    for i in np.arange(0.2,5,0.2):
+        for j in np.arange(1,10,0.25):
+            y_train_preds_out = prediction_caliberation_wrapper(y_train_preds,weights=[1,i,j])
+            y_val_preds_out = prediction_caliberation_wrapper(y_val_preds,weights=[1,i,j])
+            y_train_preds_out = np.argmax(y_train_preds_out, axis=1)
+            y_val_preds_out = np.argmax(y_val_preds_out, axis=1)
+            acc_train, f1_train = calculate_results(y_train, y_train_preds_out)
+            acc_test, f1_test = calculate_results(y_val, y_val_preds_out)
+            results.append([i,j,acc_train,f1_train,acc_test,f1_test])
+    results = pd.DataFrame(results,columns=["p1","p2","acc_train","f1_train","acc_test","f1_test"])
+    print("train-test f1 correlation = \n",results[["f1_train","f1_test"]].corr())
+    results = results.sort_values(["f1_test"],ascending=False)
+    results = pd.concat([results[(results["p1"]==1)&(results["p2"]==1)],results.head(4)])
+    display(results)
+    return None
+
+# def calculate_results(y_true,y_pred):
+#     f1_mac = f1_score(y_true, y_pred, average='macro')
+#     return f1_mac
+
+def find_best_caliberation(y_train,y_val,y_train_preds,y_val_preds):
+    results = []
+    p2_by_p0 = 1
+    p1_by_p0 = 1
+    for i in list(np.geomspace(0.25,10,50))+[1]:
+        for j in list(np.geomspace(1,20,50))+[1]:
+            y_train_preds_out = prediction_caliberation_wrapper(y_train_preds,weights=[1,i,j])
+            y_val_preds_out = prediction_caliberation_wrapper(y_val_preds,weights=[1,i,j])
+            y_train_preds_out = np.argmax(y_train_preds_out, axis=1)
+            y_val_preds_out = np.argmax(y_val_preds_out, axis=1)
+            acc_train,f1_train = calculate_results(y_train, y_train_preds_out)
+            acc_test,f1_test = calculate_results(y_val, y_val_preds_out)
+            results.append([i,j,acc_train,f1_train,acc_test,f1_test])
+    results = pd.DataFrame(results,columns=["p1_by_p0","p2_by_p0","acc_train","f1_train","acc_test","f1_test"])
+    print("train-test f1 correlation = \n",results[["f1_train","f1_test"]].corr())
+    results = results.sort_values(["f1_test"],ascending=False)
+    results = pd.concat([results[(results["p1_by_p0"]==1)&(results["p2_by_p0"]==1)].head(1),results.head(4)])
+    display(results)
+    return results.head(1)
+
+# def find_best_caliberation_only_train(y_train,y_train_preds):
+#     results = []
+#     p2_by_p0 = 1
+#     p1_by_p0 = 1
+#     for i in list(np.geomspace(0.25,10,50))+[1]:
+#         for j in list(np.geomspace(1,20,50))+[1]:
+#             y_train_preds_out = prediction_caliberation_wrapper(y_train_preds,weights=[1,i,j])
+#             y_train_preds_out = np.argmax(y_train_preds_out, axis=1)
+#             f1_train = calculate_results(y_train, y_train_preds_out)
+#             results.append([i,j,f1_train])
+#     results = pd.DataFrame(results,columns=["p1_by_p0","p2_by_p0","f1_train"])
+#     results = results.sort_values(["f1_train"],ascending=False)
+#     results = pd.concat([results[(results["p1_by_p0"]==1)&(results["p2_by_p0"]==1)],results.head(4)])
+#     display(results)
+#     return None
+
+
+def find_best_caliberation_only_train(y_train,y_train_preds):
+    results = []
+    p2_by_p0 = 1
+    p1_by_p0 = 1
+    for i in list(np.arange(0.5,5,0.2))+[1]:
+        for j in list(np.arange(1,10,0.25))+[1]:
+            y_train_preds_out = prediction_caliberation_wrapper(y_train_preds,weights=[1,i,j])
+            y_train_preds_out = np.argmax(y_train_preds_out, axis=1)
+            f1_train = calculate_results(y_train, y_train_preds_out)
+            results.append([i,j,f1_train])
+    results = pd.DataFrame(results,columns=["p1_by_p0","p2_by_p0","f1_train"])
+    results = results.sort_values(["f1_train"],ascending=False)
+    results = pd.concat([results[(results["p1_by_p0"]==1)&(results["p2_by_p0"]==1)],results.head(4)])
+    display(results)
+    return None
+    
 # https://github.com/keras-team/keras/issues/5794
 # https://github.com/keras-team/keras/issues/10472
 class DataGenMetrics(keras.callbacks.Callback):
-    def __init__(self,train,val):
+    def __init__(self,train,val,weights,df_test = None, extract_values = None):
         self.train = train
         self.val = val
         self.train_batches = len(train)
-        self.val_batches = len(val)
+        self.val_batches = len(val) if val is not None else 0
+        self.weights = weights
+        self.df_test = df_test
+        self.test_predictions = []
+        self.extract_values = extract_values
     
     def exec_iter(self,iterator,length):
         
         y_preds = []
         y_true = []
+        y_true_ohe = []
+        y_pred_ohe = []
         for i in range(length):
             x,y = next(iterator)
             y_pred = self.model.predict(x)
@@ -413,19 +518,31 @@ class DataGenMetrics(keras.callbacks.Callback):
             y = np.asarray(y)
             y = y.reshape(y_pred.shape)
             
+            y_true_ohe = y_true_ohe + list(y)
+            y_pred_ohe = y_pred_ohe + list(y_pred)
+            
             y = list(np.argmax(y, axis=1))
             y_pred = list(np.argmax(y_pred, axis=1))
             y_true = y_true + y
             y_preds = y_preds + y_pred
             
         f1s=f1_score(y_true, y_preds, average="macro")
-        return f1s
+        return f1s,y_true,y_preds,y_true_ohe,y_pred_ohe
         
     def on_epoch_end(self, batch, logs={}):
         
-        f1s_train = self.exec_iter(self.train,self.train_batches)
-        f1s_val = self.exec_iter(self.val,self.val_batches)
-        print("Validation F1 Score = %.4f, Train F1 Score = %.4f"%(f1s_val,f1s_train))
+        f1s_train,y_train,_,_,y_train_preds = self.exec_iter(self.train,self.train_batches)
+        
+        
+        if self.val is not None:
+            f1s_val,y_val,_,_,y_val_preds = self.exec_iter(self.val,self.val_batches)
+            find_best_caliberation(y_train,y_val,y_train_preds,y_val_preds)
+        else:
+            find_best_caliberation_only_train(y_train,y_train_preds)
+        # print("Validation F1 Score = %.4f, Train F1 Score = %.4f"%(f1s_val,f1s_train))
+        if self.df_test is not None and self.extract_values is not None:
+            y_test_preds = self.model.predict(self.extract_values(self.df_test))
+            self.test_predictions.append(y_test_preds)
         return
     
     
@@ -436,15 +553,17 @@ def batch_cutout(*args,**options):
     p = options.pop('p', 0.5)
     min_words = options.pop('min_words', 2)
     max_words = options.pop('max_words', 5)
+    num_cuts = options.pop('num_cuts', 3)
     p_1 = np.random.rand()
     if p_1 > p:
         return args
-    mx = np.random.randint(min_words, max_words + 1)
-    start = np.random.randint(0, len(args[0][0]))
-    end = min(start+mx,len(args[0][0]))
-    for arg in args:
-        # print(start,end,"Shape = ",arg[0].shape,)
-        arg[:,start:end] = 0
+    for i in range(num_cuts):
+        mx = np.random.randint(min_words, max_words + 1)
+        start = np.random.randint(0, len(args[0][0]))
+        end = min(start+mx,len(args[0][0]))
+        for arg in args:
+            # print(start,end,"Shape = ",arg[0].shape,)
+            arg[:,start:end] = 0
     
     return args
 
