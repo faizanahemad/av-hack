@@ -2,6 +2,11 @@
 
 ![image](https://user-images.githubusercontent.com/37707687/62003677-4119b700-b138-11e9-89ad-60725dc3f6f8.png)
 
+## About the Solution
+- Used 1D CNN
+- Multiple values of Thresholds for improving F1, (no improvement).
+
+## About the competition
 
 ### Problem Statement
 Sentiment Analysis for drugs/medicines Nowadays the narrative of a brand is not only built and controlled by the company that owns the brand. For this reason, companies are constantly looking out across Blogs, Forums, and other social media platforms, etc for checking the sentiment for their various products and also competitor products to learn how their brand resonates in the market. This kind of analysis helps them as part of their post-launch market research. This is relevant for a lot of industries including pharma and their drugs.
@@ -36,3 +41,9 @@ The metric used for evaluating the performance of the classification model would
 The texts in the test data are further randomly divided into Public (40%) and Private (60%) data. Your initial responses will be checked and scored on the Public data. The final rankings would be based on your private score which will be published once the competition is over.
 
 Private Leaderboard: 70 (Score: 0.5017273731)
+
+## References
+- [Model Stacking](https://www.kaggle.com/general/18793)
+- [Another User Solution](https://github.com/chetanambi/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis/blob/master/Sentiment%20Analysis_Final%20Solution_0.5230949840.ipynb)
+- [Soln 2: DNN](https://github.com/shravankoninti/AV/blob/master/Innoplexus_25_July_2019/AV_Innoplex_25072019ipynb.ipynb)
+- [Spacy and word Cloud Soln](https://github.com/saroj1994/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis/blob/master/innoplexus_hackathon_submission_code.ipynb)
