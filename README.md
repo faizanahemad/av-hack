@@ -44,6 +44,7 @@ Private Leaderboard: 70 (Score: 0.5017273731)
 
 ## References
 - [Model Stacking](https://www.kaggle.com/general/18793)
+- [Better Solution with Text Augment](https://github.com/rajat5ranjan/AV-Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis)
 - [Another User Solution](https://github.com/chetanambi/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis/blob/master/Sentiment%20Analysis_Final%20Solution_0.5230949840.ipynb)
 - [Soln 2: DNN](https://github.com/shravankoninti/AV/blob/master/Innoplexus_25_July_2019/AV_Innoplex_25072019ipynb.ipynb)
 - [Spacy and word Cloud Soln](https://github.com/saroj1994/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis/blob/master/innoplexus_hackathon_submission_code.ipynb)
