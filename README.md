@@ -10,6 +10,7 @@
 - Sentence Shuffle
 - Hand held preprocessing like [this](https://github.com/pawangeek/Ccmps/blob/master/innoplexus/preprocessing(part1).ipynb)
 - Use only words which are in both train and test set. Works in a competition but not in real-world
+- Use Fast.ai's pretrained Bert like [here](https://github.com/pawangeek/Ccmps/blob/master/innoplexus/bert%2Bfastai(model).ipynb)
 
 ## About the competition
 
