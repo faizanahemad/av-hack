@@ -6,6 +6,11 @@
 - Used 1D CNN
 - Multiple values of Thresholds for improving F1, (no improvement).
 
+### Areas of Improvement
+- Sentence Shuffle
+- Hand held preprocessing like [this](https://github.com/pawangeek/Ccmps/blob/master/innoplexus/preprocessing(part1).ipynb)
+- Use only words which are in both train and test set. Works in a competition but not in real-world
+
 ## About the competition
 
 ### Problem Statement
@@ -48,3 +53,5 @@ Private Leaderboard: 70 (Score: 0.5017273731)
 - [Another User Solution](https://github.com/chetanambi/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis/blob/master/Sentiment%20Analysis_Final%20Solution_0.5230949840.ipynb)
 - [Soln 2: DNN](https://github.com/shravankoninti/AV/blob/master/Innoplexus_25_July_2019/AV_Innoplex_25072019ipynb.ipynb)
 - [Spacy and word Cloud Soln](https://github.com/saroj1994/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis/blob/master/innoplexus_hackathon_submission_code.ipynb)
+
+
