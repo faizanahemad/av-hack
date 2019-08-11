@@ -11,6 +11,8 @@
 - Hand held preprocessing like [this](https://github.com/pawangeek/Ccmps/blob/master/innoplexus/preprocessing(part1).ipynb)
 - Use only words which are in both train and test set. Works in a competition but not in real-world
 - Use Fast.ai's pretrained Bert like [here](https://github.com/pawangeek/Ccmps/blob/master/innoplexus/bert%2Bfastai(model).ipynb)
+- Word Contractions like 're->are, I'm -> I am et
+- Mis-Spelling correction using edit distance and pre-existing dictionary of words
 
 ## About the competition
 
@@ -52,7 +54,10 @@ Private Leaderboard: 70 (Score: 0.5017273731)
 - [Model Stacking](https://www.kaggle.com/general/18793)
 - [Rank 14 Solution with Fast.ai Pretrained Bert and data specific text processing](https://github.com/pawangeek/Ccmps/tree/master/innoplexus)
 - [Better Solution with Text Augment](https://github.com/rajat5ranjan/AV-Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis)
+- [Rank-27: Word Contractions](https://github.com/Laxminarayen/Innoplex_Hackathon/blob/master/Sentiment%20Classification%20ML%20%2B%20Keras%20Functional.ipynb)
 - [Another User Solution](https://github.com/chetanambi/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis/blob/master/Sentiment%20Analysis_Final%20Solution_0.5230949840.ipynb)
+- [Misspellings and Contractions](https://github.com/nursnaaz/AV-Innoplexus)
+- [Deep and Wide LSTM+GRU with Spell correct](https://github.com/anandthirwani/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis)
 - [Soln 2: DNN](https://github.com/shravankoninti/AV/blob/master/Innoplexus_25_July_2019/AV_Innoplex_25072019ipynb.ipynb)
 - [Spacy and word Cloud Soln](https://github.com/saroj1994/Innoplexus-Online-Hiring-Hackathon-Sentiment-Analysis/blob/master/innoplexus_hackathon_submission_code.ipynb)
 
